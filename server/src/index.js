@@ -1,5 +1,6 @@
 const net = require('net')
 const commands = require('./commands')
+const h = require('./helpers')
 
 const prefix = '/'
 // let sockets = []
@@ -8,18 +9,14 @@ let sockets = new Map()
 // puts message from one socket to all other connected sockets
 const receiveData = (sockets, socket, data) => {
   // tell user there is no one to chat to
-  // if (sockets.length === 1) {
-  //   socket.write('There is no one in the server.\n')
-  //   return
-  // }
   if (socket.size === 1) {
-    socket.write('There is no one in the server.\n')
+    h.serverReply(socket, 'There is no one in the server.')
     return
   }
   // send message to everyone except itself
   for (const s of sockets.values()) {
     if (s !== socket) {
-      s.write(data)
+      h.serverReply(s, data)
     }
   }
 }
@@ -39,11 +36,10 @@ const cleanInput = (data) => {
 }
 
 const newSocket = (socket) => {
-  socket.write('Welcome to the Telnet server!\n')
-
+  h.serverReply(socket, 'Welcome to the Telnet server!')
   // get nickname from new socket
   let getName = true
-  socket.write('Login Name?\n')
+  h.serverReply(socket, 'Login name?')
 
   // comes here whenever a message is sent
   socket.on('data', (data) => {
@@ -51,12 +47,13 @@ const newSocket = (socket) => {
     const cleanData = cleanInput(data)
     if (getName) {
       if (sockets.has(cleanData)) {
-        socket.write('Sorry, name taken.\n')
-        socket.write('Login Name?\n')
+        h.serverReply(socket, 'Sorry, name taken.')
+        h.serverReply(socket, 'Login Name?')
       } else {
         getName = false
         sockets.set(cleanData, socket)
-        socket.write(`Welcome, ${cleanData}!\n`)
+        h.serverReply(socket, `Welcome, ${cleanData}!`)
+        h.serverReply(socket, 'Try out some commands with /commands.')
       }
       return
     }
