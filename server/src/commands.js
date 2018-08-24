@@ -8,7 +8,16 @@ const ping = (allSockets, socket, msg) => {
   socket.write(reply)
 }
 
+const people = (allSockets, socket, msg) => {
+  let reply = ''
+  for (const s of allSockets.keys()) {
+    reply += s + '\n'
+  }
+  socket.write(reply)
+}
+
 module.exports = {
   quit: quit,
-  ping: ping
+  ping: ping,
+  people: people
 }

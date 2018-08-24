@@ -2,29 +2,34 @@ const net = require('net')
 const commands = require('./commands')
 
 const prefix = '/'
-let sockets = []
+// let sockets = []
+let sockets = new Map()
 
 // puts message from one socket to all other connected sockets
-const receiveData = (allSockets, socket, data) => {
+const receiveData = (sockets, socket, data) => {
   // tell user there is no one to chat to
-  if (allSockets.length === 1) {
+  // if (sockets.length === 1) {
+  //   socket.write('There is no one in the server.\n')
+  //   return
+  // }
+  if (socket.size === 1) {
     socket.write('There is no one in the server.\n')
     return
   }
-
   // send message to everyone except itself
-  for (let i = 0; i < allSockets.length; i++) {
-    if (allSockets[i] !== socket) {
-      allSockets[i].write(data)
+  for (const s of sockets.values()) {
+    if (s !== socket) {
+      s.write(data)
     }
   }
 }
 
 // removes socket when somoene leaves
 const closeSocket = (socket) => {
-  let i = sockets.indexOf(socket)
-  if (i !== -1) {
-    sockets.splice(i, 1)
+  for (const s of sockets.keys()) {
+    if (sockets.s === socket) {
+      sockets.delete(s)
+    }
   }
 }
 
@@ -34,27 +39,44 @@ const cleanInput = (data) => {
 }
 
 const newSocket = (socket) => {
-  sockets.push(socket)
   socket.write('Welcome to the Telnet server!\n')
+
+  // get nickname from new socket
+  let getName = true
+  socket.write('Login Name?\n')
 
   // comes here whenever a message is sent
   socket.on('data', (data) => {
     // let message = userReply(data)
     const cleanData = cleanInput(data)
-
-    // splits message by space
-    const messageArray = cleanData.trim().split(' ').filter((element) => {
-      return element !== ''
-    })
-
-    // finds for commands
-    const command = messageArray[0]
-    if (command.indexOf(prefix) === 0) {
-      // removes the prefix symbol and checks if command exists for the bot
-      let commandExists = commands[command.slice(prefix.length)]
-      if (commandExists) {
-        commandExists(sockets, socket, data)
+    if (getName) {
+      if (sockets.has(cleanData)) {
+        socket.write('Sorry, name taken.\n')
+        socket.write('Login Name?\n')
+      } else {
+        getName = false
+        sockets.set(cleanData, socket)
+        socket.write(`Welcome, ${cleanData}!\n`)
       }
+      return
+    }
+
+    // finds commands
+    const firstLetter = cleanData.substring(0, 1)
+    if (firstLetter === prefix) {
+      // splits message by space
+      const messageArray = cleanData.trim().split(' ').filter((element) => {
+        return element !== ''
+      })
+      const command = messageArray[0]
+      if (command.indexOf(prefix) === 0) {
+        // removes the prefix symbol and checks if command exists for the bot
+        let commandExists = commands[command.slice(prefix.length)]
+        if (commandExists) {
+          commandExists(sockets, socket, data)
+        }
+      }
+      return
     }
 
     // send message to other sockets
