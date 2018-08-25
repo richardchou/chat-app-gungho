@@ -3,18 +3,20 @@ const commands = require('./commands')
 const h = require('./helpers')
 
 const prefix = '/'
-let sockets = new Map()
-let chatrooms = []
+// let sockets = new Map()
+let sockets = []
+// let chatrooms = []
+let chatrooms = new Map()
 
 // puts message from one socket to all other connected sockets
 const receiveData = (sockets, socket, data) => {
   // tell user there is no one to chat to
-  if (socket.size === 1) {
+  if (sockets.length === 1) {
     h.serverReply(socket, 'There is no one in the server.')
     return
   }
   // send message to everyone except itself
-  for (const s of sockets.values()) {
+  for (const s of sockets) {
     if (s !== socket) {
       h.serverReply(s, data)
     }
@@ -26,9 +28,9 @@ const closeSocket = (socket) => {
   // remove from chatroom
 
   // delete from socket list
-  for (const s of sockets.keys()) {
-    if (sockets.s === socket) {
-      sockets.delete(s)
+  for (const s of sockets) {
+    if (s === socket) {
+      sockets.pop(s)
     }
   }
 }
@@ -38,26 +40,34 @@ const cleanInput = (data) => {
   return data.toString().replace(/(\r\n|\n|\r)/gm, '')
 }
 
+// additions to socket
+// socket.nickname = the nickname of this socket
+// socket.own = the chatroom this socket has created
+// socket.current = the current chatroom this socket is in
 const newSocket = (socket) => {
   h.serverReply(socket, 'Welcome to the Telnet server!')
   // get nickname from new socket
-  let getName = true
   h.serverReply(socket, 'Login name?')
 
   // comes here whenever a message is sent
   socket.on('data', (data) => {
-    // let message = userReply(data)
     const cleanData = cleanInput(data)
-    if (getName) {
-      if (sockets.has(cleanData)) {
-        h.serverReply(socket, 'Sorry, name taken.')
-        h.serverReply(socket, 'Login Name?')
-      } else {
-        getName = false
-        sockets.set(cleanData, socket)
-        h.serverReply(socket, `Welcome, ${cleanData}!`)
-        h.serverReply(socket, 'Try out some commands with /commands.')
+    if (!socket.nickname) {
+      console.log('comes here')
+      // check if nickname exists
+      for (const s of sockets) {
+        if (s.nickname === cleanData) {
+          h.serverReply(socket, 'Sorry, name taken.')
+          h.serverReply(socket, 'Login Name?')
+          return
+        }
       }
+
+      // nickname not taken, create new user/socket
+      socket.nickname = cleanData
+      sockets.push(socket)
+      h.serverReply(socket, `Welcome, ${cleanData}!`)
+      h.serverReply(socket, 'Try out some commands with /commands.')
       return
     }
 

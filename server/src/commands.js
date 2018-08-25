@@ -22,8 +22,8 @@ const ping = (...params) => {
 // lists everyone connected to this server
 const people = (...params) => {
   let reply = []
-  for (const s of params[0].keys()) {
-    reply.push(s)
+  for (const s of params[0]) {
+    reply.push(s.nickname)
   }
   h.serverReply(params[1], reply.join('\n* '))
 }
@@ -36,7 +36,8 @@ const commands = (...params) => {
     '/people -> Lists everyone who is connected to this server.',
     '/rooms  -> Lists all open chatrooms.',
     '/create -> Creates a new chatroom.',
-    '/join   -> Joins an existing chatroom.'
+    '/join   -> Joins an existing chatroom.',
+    '/remove -> Deletes the chatroom that you own.'
   ]
   h.serverReply(params[1], reply.join('\n* '))
 }
@@ -46,7 +47,6 @@ const create = (...params) => {
   let chatrooms = params[3]
   const msg = params[2]
   const socket = params[1]
-  const allSockets = params[0]
 
   // chat name
   const [, ...chatName] = msg
@@ -61,29 +61,32 @@ const create = (...params) => {
   if (socket.own) {
     let reply = [
       'You have already created a chatroom.',
-      'To delete it, the command is /delete'
+      'To delete it, the command is /remove'
     ]
     h.serverReply(socket, reply.join('\n* '))
     return
   }
 
   // create new chatroom
+  const newName = chatName.join('_')
   let newChat = {
-    name: chatName.join('_'),
-    creator: h.getKeyByValue(allSockets, socket),
+    // name: chatName.join('_'),
+    creator: socket.nickname,
     users: []
   }
-  chatrooms.push(newChat)
-  socket.own = newChat.name
-  h.serverReply(socket, `New chatroom "${newChat.name}" created.`)
+  chatrooms.set(newName, newChat)
+  // what chatroom the socket owns
+  socket.own = newName
+  h.serverReply(socket, `New chatroom "${newName}" created.`)
 }
 
 // lists all existing chatrooms
 const rooms = (...params) => {
   let reply = []
   const chatrooms = params[3]
-  for (const c of chatrooms) {
-    reply.push(`${c.name} (${c.users.length})`)
+  for (const [name, data] of chatrooms.entries()) {
+    console.log(name, data)
+    reply.push(`${name} (${data.users.length})`)
   }
   reply.push('end of list.')
   h.serverReply(params[1], reply.join('\n* '))
@@ -91,9 +94,9 @@ const rooms = (...params) => {
 
 // join an existing chatroom
 const join = (...params) => {
+  const [allSockets, socket, msg] = params
   let chatrooms = params[3]
-  const msg = params[2]
-  const socket = params[1]
+
   const [, ...chatName] = msg
 
   // no chatroom entered
@@ -103,26 +106,68 @@ const join = (...params) => {
 
   // check if chatroom exists, if so, add this user to it.
   const name = chatName.join('_')
-  for (const c of chatrooms) {
-    if (c.name === name) {
-      const userName = h.getKeyByValue(params[0], socket)
-      c.users.push(userName)
-      // socket.room = name
-      h.serverReply(socket, `Entering room: "${c.name}"`)
-      h.serverReply(socket, 'Users:')
-      for (const user of c.users) {
-        if (user === userName) {
-          h.serverReply(socket, `${userName} (you)`)
-        } else {
-          h.serverReply(socket, `${user}`)
-        }
-      }
-      return
+  if (chatrooms.has(name)) {
+    if (socket.current) {
+      const currentChat = chatrooms.get(socket.current)
+      // remove user from their old chatroom
+      currentChat.users.splice(currentChat.users.indexOf(socket.nickname), 1)
+      h.serverReply(socket, `Leaving ${socket.current}...`)
     }
+
+    // add user onto new chatroom
+    const newChat = chatrooms.get(name)
+    newChat.users.push(socket.nickname)
+    socket.current = name
+    h.serverReply(socket, `Joining ${name}...`)
+    // printing current users in the chat
+    for (const user of newChat.users) {
+      if (user === socket.nickname) {
+        h.serverReply(socket, user + ' (you)')
+      } else {
+        h.serverReply(socket, user)
+        h.serverReply(h.getSocketByName(allSockets, user), `${socket.nickname} has joined.`)
+      }
+    }
+  } else {
+    // no chatroom with given name found
+    h.serverReply(socket, `The chatroom "${name}" was not found. Please check again.`)
+  }
+}
+
+// delete users chatroom
+const remove = (...params) => {
+  const [allSockets, socket, msg] = params
+  let chatrooms = params[3]
+  const [, ...chatName] = msg
+
+  // no chatroom entered
+  if (chatName.length === 0) {
+    h.serverReply(socket, 'Please enter your chatroom name. We require you to type the chatroom name to prevent accidents.')
+    return
   }
 
-  // no chatroom with given name found
-  h.serverReply(params[1], `The chatroom "${name}" was not found. Please check again.`)
+  const name = chatName.join('_')
+  if (chatrooms.has(name)) {
+    let room = chatrooms.get(name)
+    
+    // need copySocket since only one socket can be at a chatroom at a time, so once they are
+    // deleted, it would be redundant to check for that same socket.
+    const copySockets = allSockets
+    for (const r of room.users) {
+      for (const s of copySockets) {
+        // notify all users in room that it is being deleted
+        if (r === s.nickname) {
+          s.current = null
+          h.serverReply(s, 'The owner is deleting the chatroom. You are now being removed.')
+          copySockets.splice(copySockets.indexOf(s), 1)
+        }
+      }
+    }
+    chatrooms.delete(name)
+    socket.own = null
+  } else {
+    h.serverReply(socket, 'You have typed your chatroom name wrong. We require you to type the chatroom name to prevent accidents.')
+  }
 }
 
 module.exports = {
@@ -132,5 +177,6 @@ module.exports = {
   commands: commands,
   create: create,
   rooms: rooms,
-  join: join
+  join: join,
+  remove: remove
 }
