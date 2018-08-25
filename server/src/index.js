@@ -3,8 +3,8 @@ const commands = require('./commands')
 const h = require('./helpers')
 
 const prefix = '/'
-// let sockets = []
 let sockets = new Map()
+let chatrooms = []
 
 // puts message from one socket to all other connected sockets
 const receiveData = (sockets, socket, data) => {
@@ -23,6 +23,9 @@ const receiveData = (sockets, socket, data) => {
 
 // removes socket when somoene leaves
 const closeSocket = (socket) => {
+  // remove from chatroom
+
+  // delete from socket list
   for (const s of sockets.keys()) {
     if (sockets.s === socket) {
       sockets.delete(s)
@@ -58,7 +61,7 @@ const newSocket = (socket) => {
       return
     }
 
-    // finds commands
+    // checks if user has entered a command
     const firstLetter = cleanData.substring(0, 1)
     if (firstLetter === prefix) {
       // splits message by space
@@ -70,14 +73,14 @@ const newSocket = (socket) => {
         // removes the prefix symbol and checks if command exists for the bot
         let commandExists = commands[command.slice(prefix.length)]
         if (commandExists) {
-          commandExists(sockets, socket, data)
+          commandExists(sockets, socket, messageArray, chatrooms)
         }
       }
       return
     }
 
     // send message to other sockets
-    receiveData(sockets, socket, data)
+    // receiveData(sockets, socket, data)
   })
 
   // when session is terminated, run this action
