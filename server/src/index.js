@@ -9,23 +9,58 @@ let sockets = []
 let chatrooms = new Map()
 
 // puts message from one socket to all other connected sockets
-const receiveData = (sockets, socket, data) => {
+const sendMessage = (socket, data) => {
   // tell user there is no one to chat to
   if (sockets.length === 1) {
-    h.serverReply(socket, 'There is no one in the server.')
+    h.serverReply(socket, 'There is no one in the chatroom.')
     return
   }
-  // send message to everyone except itself
-  for (const s of sockets) {
-    if (s !== socket) {
-      h.serverReply(s, data)
+
+  // if user owns the channel, they will have special indicator
+  const room = chatrooms.get(socket.current)
+  // send message to everyone except themselves
+  for (const user of room.users) {
+    if (user !== socket.nickname) {
+      const isOwn = socket.nickname === room.creator
+      if (isOwn) {
+        h.userReply(h.getSocketByName(sockets, user), socket.nickname + ' (owner)', data)
+      } else {
+        h.userReply(h.getSocketByName(sockets, user), socket.nickname, data)
+      }
     }
   }
 }
 
 // removes socket when somoene leaves
 const closeSocket = (socket) => {
-  // remove from chatroom
+  // remove chatroom that socket owns
+  if (socket.own) {
+    if (socket.current === socket.own) socket.current = null
+
+    let copySockets = sockets
+    const room = chatrooms.get(socket.own)
+    for (const r of room.users) {
+      for (const s of copySockets) {
+        // notify all users in room that it is being deleted
+        if (r === s.nickname && s.nickname !== socket.nickname) {
+          s.current = null
+          h.serverReply(s, 'The owner has left the server. Their chatroom has been removed.')
+          copySockets.splice(copySockets.indexOf(s), 1)
+        }
+      }
+    }
+    chatrooms.delete(socket.own)
+  }
+
+  // remove socket from current chatroom
+  if (socket.current) {
+    let room = chatrooms.get(socket.current)
+    for (const user of room.users) {
+      if (user === socket.nickname) {
+        room.users.splice(room.users.indexOf())
+      }
+    }
+  }
 
   // delete from socket list
   for (const s of sockets) {
@@ -52,8 +87,42 @@ const newSocket = (socket) => {
   // comes here whenever a message is sent
   socket.on('data', (data) => {
     const cleanData = cleanInput(data)
+
+    // splits message by space
+    const messageArray = cleanData.trim().split(' ').filter((element) => {
+      return element !== ''
+    })
+
+    // checks if user has entered a command
+    const firstLetter = cleanData.substring(0, 1)
+    if (firstLetter === prefix) {
+      // names cannot look like commands
+      if (!socket.nickname) {
+        h.serverReply(socket, 'Sorry, your name cannot start with a slash.')
+        return
+      }
+
+      const command = messageArray[0]
+      if (command.indexOf(prefix) === 0) {
+        // removes the prefix symbol and checks if command exists for the bot
+        let commandExists = commands[command.slice(prefix.length)]
+        if (commandExists) {
+          commandExists(sockets, socket, messageArray, chatrooms)
+        } else {
+          h.serverReply(socket, 'Sorry, but the command you are looking for does not exist. Try again.')
+        }
+      }
+      return
+    }
+
+    // user did not send a command, check if user has nickname
     if (!socket.nickname) {
-      console.log('comes here')
+      // one word names
+      if (messageArray.length > 1) {
+        h.serverReply(socket, 'Sorry, your name must be one word.')
+        return
+      }
+
       // check if nickname exists
       for (const s of sockets) {
         if (s.nickname === cleanData) {
@@ -71,26 +140,13 @@ const newSocket = (socket) => {
       return
     }
 
-    // checks if user has entered a command
-    const firstLetter = cleanData.substring(0, 1)
-    if (firstLetter === prefix) {
-      // splits message by space
-      const messageArray = cleanData.trim().split(' ').filter((element) => {
-        return element !== ''
-      })
-      const command = messageArray[0]
-      if (command.indexOf(prefix) === 0) {
-        // removes the prefix symbol and checks if command exists for the bot
-        let commandExists = commands[command.slice(prefix.length)]
-        if (commandExists) {
-          commandExists(sockets, socket, messageArray, chatrooms)
-        }
-      }
-      return
+    // if thi user is not in a chatroom
+    if (!socket.current) {
+      h.serverReply(socket, 'You are not in a chatroom. Find a chatroom with /room and start chatting!')
+    } else {
+      // send message to other sockets in current chatroom
+      sendMessage(socket, cleanData)
     }
-
-    // send message to other sockets
-    // receiveData(sockets, socket, data)
   })
 
   // when session is terminated, run this action

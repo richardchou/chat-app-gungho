@@ -4,6 +4,10 @@ const serverReply = (socket, message) => {
   socket.write(`* ${message}\n`)
 }
 
+const userReply = (socket, name, message) => {
+  socket.write(`${name}: ${message}\n`)
+}
+
 const getSocketByName = (sockets, name) => {
   for (const s of sockets) {
     if (name === s.nickname) {
@@ -11,14 +15,9 @@ const getSocketByName = (sockets, name) => {
     }
   }
 }
-// const getKeyByValue = (map, value) => {
-//   for (const m of map.entries()) {
-//     if (m[1] === value) {
-//       return m[0]
-//     }
-//   }
-// }
+
 module.exports = {
   serverReply: serverReply,
+  userReply: userReply,
   getSocketByName: getSocketByName
 }

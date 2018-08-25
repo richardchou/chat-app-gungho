@@ -149,14 +149,14 @@ const remove = (...params) => {
   const name = chatName.join('_')
   if (chatrooms.has(name)) {
     let room = chatrooms.get(name)
-    
+
     // need copySocket since only one socket can be at a chatroom at a time, so once they are
     // deleted, it would be redundant to check for that same socket.
-    const copySockets = allSockets
+    let copySockets = allSockets
     for (const r of room.users) {
       for (const s of copySockets) {
         // notify all users in room that it is being deleted
-        if (r === s.nickname) {
+        if (r === s.nickname &&  s.nickname !== socket.nickname) {
           s.current = null
           h.serverReply(s, 'The owner is deleting the chatroom. You are now being removed.')
           copySockets.splice(copySockets.indexOf(s), 1)
