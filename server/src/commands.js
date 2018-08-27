@@ -1,6 +1,7 @@
 const h = require('./helpers')
 const chat = require('./chatrooms')
 const pm = require('./pm')
+const minigames = require('./minigames')
 
 // terminate telnet session
 const quit = (...params) => {
@@ -61,5 +62,6 @@ const cmds = {
 module.exports = {
   ...cmds,
   ...chat,
-  ...pm
+  ...pm,
+  ...minigames
 }

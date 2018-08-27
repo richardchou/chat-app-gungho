@@ -143,7 +143,7 @@ const newSocket = (socket) => {
 
     // if this user is not in a chatroom
     if (!socket.current) {
-      h.serverReply(socket, 'You are not in a chatroom. Find a chatroom with /room and start chatting!')
+      h.serverReply(socket, 'You are not in a chatroom. Find a chatroom with /rooms and start chatting!')
     } else {
       // send message to other sockets in current chatroom
       sendMessage(socket, cleanData)
