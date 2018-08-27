@@ -102,9 +102,9 @@ const newSocket = (socket) => {
         return
       }
 
-      const command = messageArray[0]
+      const command = messageArray[0].toLowerCase()
       if (command.indexOf(prefix) === 0) {
-        // removes the prefix symbol and checks if command exists for the bot
+        // removes the prefix symbol and checks if command exists
         let commandExists = commands[command.slice(prefix.length)]
         if (commandExists) {
           commandExists(sockets, socket, messageArray, chatrooms)

@@ -8,6 +8,10 @@ const userReply = (socket, name, message) => {
   socket.write(`${name}: ${message}\n`)
 }
 
+const pmReply = (socket, name, message) => {
+  socket.write(`PM from ${name}: ${message}\n`)
+}
+
 const getSocketByName = (sockets, name) => {
   for (const s of sockets) {
     if (name === s.nickname) {
@@ -19,5 +23,6 @@ const getSocketByName = (sockets, name) => {
 module.exports = {
   serverReply: serverReply,
   userReply: userReply,
+  pmReply: pmReply,
   getSocketByName: getSocketByName
 }

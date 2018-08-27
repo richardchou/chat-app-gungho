@@ -1,5 +1,6 @@
 const h = require('./helpers')
 const chat = require('./chatrooms')
+const pm = require('./pm')
 
 // terminate telnet session
 const quit = (...params) => {
@@ -42,7 +43,10 @@ const commands = (...params) => {
     '/join   -> Joins an existing chatroom.',
     '/here   -> Lists all users in current chatroom',
     '/leave  -> Leaves current chatroom.',
-    '/remove -> Deletes the chatroom that you own.'
+    '/remove -> Deletes the chatroom that you own.',
+    '========== PRIVATE MESSAGE COMMANDS ==========',
+    '/pm     -> Send user a private message. ex. /pm User Hello',
+    '/reply  -> Send message to the person who last send you a private message.'
   ]
   h.serverReply(params[1], reply.join('\n* '))
 }
@@ -56,5 +60,6 @@ const cmds = {
 
 module.exports = {
   ...cmds,
-  ...chat
+  ...chat,
+  ...pm
 }
