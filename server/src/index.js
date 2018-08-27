@@ -11,7 +11,7 @@ let chatrooms = new Map()
 // puts message from one socket to all other connected sockets
 const sendMessage = (socket, data) => {
   // tell user there is no one to chat to
-  if (sockets.length === 1) {
+  if (chatrooms.get(socket.current).users.length === 1) {
     h.serverReply(socket, 'There is no one in the chatroom.')
     return
   }
