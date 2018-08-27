@@ -108,6 +108,7 @@ const newSocket = (socket) => {
         let commandExists = commands[command.slice(prefix.length)]
         if (commandExists) {
           commandExists(sockets, socket, messageArray, chatrooms)
+          return
         } else {
           h.serverReply(socket, 'Sorry, but the command you are looking for does not exist. Try again.')
         }
@@ -140,7 +141,7 @@ const newSocket = (socket) => {
       return
     }
 
-    // if thi user is not in a chatroom
+    // if this user is not in a chatroom
     if (!socket.current) {
       h.serverReply(socket, 'You are not in a chatroom. Find a chatroom with /room and start chatting!')
     } else {
