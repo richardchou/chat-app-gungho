@@ -26,7 +26,7 @@ const create = (...params) => {
       'You have already created a chatroom.',
       'To delete it, the command is /remove'
     ]
-    h.serverReply(socket, reply.join('\n* '))
+    h.serverReply(socket, reply.join('\r\n* '))
     return
   }
   const newName = chatName.join('_')
@@ -54,7 +54,7 @@ const rooms = (...params) => {
     reply.push(`${name} (${data.users.length})`)
   }
   reply.push('end of list.')
-  h.serverReply(params[1], reply.join('\n* '))
+  h.serverReply(params[1], reply.join('\r\n* '))
 }
 
 // lists all users in current chatroom

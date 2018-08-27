@@ -27,7 +27,7 @@ const people = (...params) => {
       reply.push(s.nickname)
     }
   }
-  h.serverReply(socket, reply.join('\n* '))
+  h.serverReply(socket, reply.join('\r\n* '))
   h.serverReply(socket, 'end of list.')
 }
 
@@ -52,7 +52,7 @@ const commands = (...params) => {
     '/flip   -> Flips a coin heads or tails.',
     '/dice   -> Rolls a die.'
   ]
-  h.serverReply(params[1], reply.join('\n* '))
+  h.serverReply(params[1], reply.join('\r\n* '))
 }
 
 const cmds = {
