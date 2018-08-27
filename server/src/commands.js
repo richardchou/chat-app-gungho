@@ -47,7 +47,10 @@ const commands = (...params) => {
     '/remove -> Deletes the chatroom that you own.',
     '========== PRIVATE MESSAGE COMMANDS ==========',
     '/pm     -> Send user a private message. ex. /pm User Hello',
-    '/reply  -> Send message to the person who last send you a private message.'
+    '/reply  -> Send message to the person who last send you a private message.',
+    '========== MINIGAMES (chatroom use only) ==========',
+    '/flip   -> Flips a coin heads or tails.',
+    '/dice   -> Rolls a die.'
   ]
   h.serverReply(params[1], reply.join('\n* '))
 }
